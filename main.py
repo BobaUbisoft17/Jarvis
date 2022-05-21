@@ -1,11 +1,12 @@
 import json
-import multiprocessing
 import os
 import webbrowser
-import wave
 import pyaudio
+import pygame
 from vosk import Model, KaldiRecognizer
+import glob
 
+songs = ["/".join(song.split("/")[-2:]) for song in glob.glob("music/myplaylist/*")]
 
 model = Model("vosk-model-small-ru-0.22")
 rec = KaldiRecognizer(model, 16000)
@@ -21,77 +22,104 @@ stream = mic.open(
 stream.start_stream()
 
 
-class MyStream:
-    def __init__(self):
-        self.origin = p.open(format=p.get_format_from_width(wf.getsampwidth()),
-                    channels=wf.getnchannels(),
-                    rate=wf.getframerate(),
-                    output=True,
-                    stream_callback=callback)
+class Player:
+    def __init__(self) -> None:
+        self.player = pygame.mixer
+        self.player.init()
     
-    def run(self):
-        self.origin.start_stream()
+    def load(self, track: str) -> None:
+        self.player.music.load(track)
 
-    def pause(self):
-        self.origin.stop_stream()
+    def play(self) -> None:
+        self.player.music.play()
+
+    def pause(self) -> None:
+        self.player.music.pause()
+
+    def unpause(self) -> None:
+        self.player.music.unpause()
+
+    def quit(self) -> None:
+        self.player.quit()
+
+    def volume_up(self, number: int) -> None:
+        volume = self.player.music.get_volume()
+        self.player.music.set_volume(volume + number / 100)
     
-    def quit(self):
-        self.origin.close()
+    def volume_down(self, number: int) -> None:
+        volume = self.player.music.get_volume()
+        if volume < number / 100:
+            self.player.music.set_volume(0.0)
+        else:
+            self.player.music.set_volume(volume - number / 100)
+
+    def turn_off_sound(self) -> None:
+        self.player.music.set_volume(0.0)
 
 
-wf = wave.open("ACDC-BackInBlack.wav", 'rb')
-p = pyaudio.PyAudio()
-
-
-def callback(in_data, frame_count, time_info, status):
-    data = wf.readframes(frame_count)
-    return (data, pyaudio.paContinue)
-
-def manage_browser(search: str) -> None:
-    if search == "meme":
+class Browser:
+    def meme() -> None:
         webbrowser.register(
-            name="Chrome",
-            klass=None,
-            instance=webbrowser.BackgroundBrowser(
-                "C:/Program Files/Google/Chrome/Application/chrome.exe"
-            ),
-        )
+                name="Chrome",
+                klass=None,
+                instance=webbrowser.BackgroundBrowser(
+                    "C:/Program Files/Google/Chrome/Application/chrome.exe"
+                ),
+            )
         webbrowser.get(using="chrome").open_new_tab(
             "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
         )
-    elif search == "quit":
+    
+    def quit() -> None:
         os.system("taskkill /im chrome.exe /f")
-    else:
+
+    def search(search: str) -> None:
         webbrowser.register(
-            name="Chrome",
-            klass=None,
-            instance=webbrowser.BackgroundBrowser(
-                "C:/Program Files/Google/Chrome/Application/chrome.exe"
-            ),
-        )
+                name="Chrome",
+                klass=None,
+                instance=webbrowser.BackgroundBrowser(
+                    "C:/Program Files/Google/Chrome/Application/chrome.exe"
+                ),
+            )
         webbrowser.get(using="chrome").open_new_tab(
             f"https://www.google.com/search?q={search}"
         )
 
 
-def listen():
-    music = MyStream()
-    music.pause()
+def listen() -> None:
+    player = Player()
+    count_songs = -1
     while True:
         data = stream.read(4000, exception_on_overflow=False)
         if rec.AcceptWaveform(data) and len(data) > 0:
             answer = json.loads(rec.Result())["text"]
             if answer:
                 if answer == "я дома":
-                    music.run()
-                if answer == "выключи музыку":
-                    music.pause()
+                    player.load("music/homespace/ACDC-BackInBlack.wav")
+                    player.play()
+                if answer == "музыка стоп":
+                    player.pause()
+                if answer == "продолжи воспроизведение":
+                    player.unpause()
+                if answer == "выключи звук":
+                    player.turn_off_sound()
+                if  answer == "сделай тише":
+                    player.volume_down(20)
+                if answer == "сделай громче":
+                    player.volume_up(20)
+                if answer == "переключи трек":
+                    if count_songs + 1 > len(songs) - 1:
+                        count_songs = 0
+                    else:
+                        count_songs += 1
+                    player.load(track=songs[count_songs])
+                    player.play()
                 if answer == "ты доверяешь мне":
-                    manage_browser("meme")
+                    Browser().meme()
                 if "найди в интернете" in answer:
-                    manage_browser(answer[18:])
+                    Browser().search(answer[18:])
                 if answer == "закрой браузер":
-                    manage_browser("quit")
+                    Browser.quit()
                 if answer == "перезагрузка":
                     os.system("shutdown -r -t 0")
                 if answer == "выключи комп":
@@ -99,17 +127,7 @@ def listen():
                 if answer == "пора на боковую":
                     quit()
                 print(answer)
-
+print(songs)
 
 if __name__ == "__main__":
     listen()
-
-
-"""for text in listen():
-    if text == "привет":
-        print("Вечер в хату")
-    elif text == "до встречи":
-        print("Бывай")
-        quit()
-    else:
-        print(text)"""
