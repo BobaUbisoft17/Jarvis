@@ -1,7 +1,11 @@
+"""Модуль для работы с ОС."""
+
 import os 
 
 
 class mng_work_space:
+    """Класс для управления устройством."""
+    
     def block_display() -> None:
         os.system("Rundll32.exe user32.dll, LockWorkStation")
     

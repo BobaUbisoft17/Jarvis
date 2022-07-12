@@ -1,3 +1,5 @@
+"""Модуль для работы с запросами пользователя."""
+
 import json
 import pyaudio
 from browser import Browser
@@ -7,6 +9,8 @@ from vosk import Model, KaldiRecognizer
 
 
 class Stream:
+    """Класс для работы с микрофоном."""
+
     def __init__(self) -> None:
         self.mic = pyaudio.PyAudio()
         self.stream = self.mic.open(
@@ -16,17 +20,20 @@ class Stream:
             input=True,
             frames_per_buffer=4096,
         )
+
     def start_stream(self) -> None:
         self.stream.start_stream()
 
 
 class Recognize:
+    """Класс для создания модели распознования речи."""
     def __init__(self) -> None:
         self.model = Model("vosk-model-small-ru-0.22")
         self.rec = KaldiRecognizer(self.model, 16000)
 
 
 def listen() -> None:
+    """Функция для ответа на запросы пользователя."""
     player = Player()
     stream = Stream()
     stream.start_stream()
@@ -92,7 +99,6 @@ def listen() -> None:
                         mng_work_space.shutdown()
                     if answer == "пора на боковую":
                         quit()
-                print(answer)
         else:
             while True:
                 data = stream.stream.read(4000, exception_on_overflow=False)

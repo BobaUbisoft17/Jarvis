@@ -1,9 +1,13 @@
+"""Модуль для упраления воспроизведением музыки."""
+
 from typing import List
 import pygame
 import glob
 
 
 class Player:
+    """Класс для управления музыкой."""
+    
     def __init__(self) -> None:
         self.player = pygame.mixer
         self.player.init()

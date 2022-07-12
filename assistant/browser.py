@@ -1,8 +1,12 @@
+"""Модуль для раюоты с браузером."""
+
 import webbrowser
 import os
 
 
 class Browser:
+    """Класс для открытия браузера по запросам."""
+    
     def meme() -> None:
         webbrowser.get().open(
             "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
